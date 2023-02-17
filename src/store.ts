@@ -26,29 +26,30 @@ const options: Fuse.IFuseOptions<ListNavEntry> = {
   ],
 };
 
-type EntryMetadata = Record<
+type ListNavEntryMetadata = Record<
   ListNavEntry['href'],
-  Nullable<{ uses: number; favorite: boolean }>
+  Nullable<{ uses: number; favorite: boolean; lastUsed: number }>
 >;
 
-const metadataKey = `${NS}-entry-metadata`;
+const KEY = `${NS}:entry-metadata`;
+export function getEntryMetadata() {
+  return getLocalStorageValue<ListNavEntryMetadata>(KEY) || {};
+}
 
 function setMostFrequent(href: string) {
-  const mostFrequentEntries =
-    getLocalStorageValue<EntryMetadata>(metadataKey) || {};
+  const mostFrequentEntries = getEntryMetadata();
   const item = mostFrequentEntries[href];
   if (item) {
     item.uses = (item.uses ?? 0) + 1;
+    item.lastUsed = Date.now();
   } else {
-    mostFrequentEntries[href] = { uses: 1, favorite: false };
+    mostFrequentEntries[href] = {
+      uses: 1,
+      favorite: false,
+      lastUsed: Date.now(),
+    };
   }
-  setLocalStorageValue(metadataKey, {
-    ...mostFrequentEntries,
-  });
-}
-
-export function getEntryMetadata() {
-  return getLocalStorageValue<EntryMetadata>(`${NS}-entry-metadata`) || {};
+  setLocalStorageValue(KEY, mostFrequentEntries);
 }
 
 interface QueryStore {
@@ -58,7 +59,7 @@ interface QueryStore {
   queryEntries: ListNavEntry[];
   filteredEntries: ListNavEntry[];
   fuse: Fuse<ListNavEntry> | null;
-  entryMetadata: EntryMetadata;
+  entryMetadata: ListNavEntryMetadata;
   show: () => void;
   hide: () => void;
   toggleVisibility: () => void;
@@ -111,10 +112,9 @@ export const useQueryStore = create<QueryStore>((set, get) => {
       const hasEntries = c + 1 < get().filteredEntries.length;
       set({ cursor: hasEntries ? c + 1 : 0 });
     },
-    updateQueryEntries: () => {
-      const structure = getNavStructure();
-      const mostFrequent =
-        getLocalStorageValue<EntryMetadata>(metadataKey) || {};
+    updateQueryEntries: async () => {
+      const structure = await getNavStructure();
+      const mostFrequent = getEntryMetadata();
       set({
         queryEntries: structure.sort((a: ListNavEntry, b: ListNavEntry) => {
           const aEntry = mostFrequent[a.href] || { uses: 0, favorite: false };
@@ -165,7 +165,7 @@ export const useQueryStore = create<QueryStore>((set, get) => {
         item.favorite = !item.favorite;
         entryMetadata[href] = item;
       }
-      setLocalStorageValue(metadataKey, entryMetadata);
+      setLocalStorageValue(KEY, entryMetadata);
       set({ entryMetadata, filteredEntries: [...get().filteredEntries] });
     },
     isFavorite: (href: string) => {

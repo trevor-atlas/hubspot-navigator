@@ -1,4 +1,17 @@
+import { getAccountMenuInfo } from './accountMenuInfoParser';
 import { settings } from './data/settings';
+import { Nullable } from './types';
+import {
+  $,
+  $$,
+  click,
+  isSome,
+  once,
+  sleep,
+  waitForElement,
+  waitForElements,
+} from './utils';
+
 export interface User {
   id: number;
   firstName: string;
@@ -66,29 +79,12 @@ const flattenTree = (
   parsedNav: Record<string, ListNavEntry>,
   path: string = ''
 ): void => {
-  // if (item.children) {
-  //   const description = path ? `${path}/${item.label}` : `${item.label}`;
-  //   const { children, ...rest } = item;
-  //   parsedNav.push({
-  //     id: item.id,
-  //     label:
-  //       item.label ||
-  //       item.id ||
-  //       `NO LABEL FOR ${JSON.stringify(rest, null, 2)}`,
-  //     href: item.path || '',
-  //     description,
-  //   });
-  // }
   const isParent = !('path' in item) && item.children && item.label;
   let description = path;
   if (isParent) {
     description = path ? `${path}/${item.label}` : `${item.label}`;
   }
-  if (
-    // !(parent.id === item.id && parent.label === item.label) &&
-    item.path &&
-    item.label
-  ) {
+  if (item.path && item.label) {
     const description = path ? `${path}/${item.label}` : `${item.label}`;
     const { children, ...rest } = item;
     parsedNav[item.path as any] = {
@@ -114,8 +110,16 @@ export type ListNavEntry = {
   description: string | null;
 };
 
-export function collateNavConfig(config: NavConfig) {
+export async function collateNavConfig(config: NavConfig) {
   const parsedNav: Record<string, ListNavEntry> = {}; //Array<ListNavEntry> = [];
+
+  const { portals, accountExtras } = await getAccountMenuInfo();
+  portals.forEach((portal) => {
+    parsedNav[portal.href] = portal;
+  });
+  accountExtras.forEach((entry) => {
+    parsedNav[entry.href] = entry;
+  });
 
   for (const item of config.children) {
     flattenTree(item, parsedNav);
@@ -133,7 +137,6 @@ export function collateNavConfig(config: NavConfig) {
       };
     }
   }
-  console.log('parsedNav with settings', parsedNav);
   return Object.values(parsedNav);
 }
 

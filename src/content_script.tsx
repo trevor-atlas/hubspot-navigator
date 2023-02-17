@@ -1,33 +1,12 @@
-function $<ElementType extends Element>(selector: string) {
-  return document.querySelector<ElementType>(selector);
-}
-
-function $$<ElementType extends Element>(selector: string) {
-  return [...document.querySelectorAll<ElementType>(selector)];
-}
-
-function getActions() {
-  const actions = [
-    {
-      href: "https://app.hubspot.com/contacts/21250524/contacts/list/view/all?createNewObject=CONTACT",
-      text: "Create Contact",
-    },
-    {
-      href: "https://app.hubspot.com/contacts/21250524/companies/list/view/all?createNewObject=COMPANY",
-      text: "Create Company",
-    },
-  ];
-}
-
 const getSettingsFromDOM = () => {
-  const sections = $$<HTMLHeadingElement>("nav h5");
+  const sections = $$<HTMLHeadingElement>('nav h5');
   console.log(
     `{${[...sections]
       .map((section) => ({
         section: section.innerText,
         entries:
           (section.nextElementSibling && [
-            ...section.nextElementSibling.querySelectorAll("a"),
+            ...section.nextElementSibling.querySelectorAll('a'),
           ]) ||
           [],
       }))
@@ -37,72 +16,72 @@ const getSettingsFromDOM = () => {
           `'${section.section}': [${section.entries.map(
             (el) =>
               `{ href: '${el.getAttribute(
-                "href"
-              )}', text: '${el.innerText.replace("\n", "")}' }`
+                'href'
+              )}', text: '${el.innerText.replace('\n', '')}' }`
           )}]`
       )}}`
   );
 };
 
 const settings = {
-  "Your Preferences": [
-    { href: "/settings/21250524/user-preferences", text: "General" },
-    { href: "/notification-preferences/21250524", text: "Notifications" },
-    { href: "/user-preferences/21250524/security", text: "Security" },
+  'Your Preferences': [
+    { href: '/settings/21250524/user-preferences', text: 'General' },
+    { href: '/notification-preferences/21250524', text: 'Notifications' },
+    { href: '/user-preferences/21250524/security', text: 'Security' },
   ],
-  "Account Setup": [
-    { href: "/settings/21250524/account-defaults", text: "Account Defaults" },
-    { href: "/settings/21250524/users", text: "Users & Teams" },
+  'Account Setup': [
+    { href: '/settings/21250524/account-defaults', text: 'Account Defaults' },
+    { href: '/settings/21250524/users', text: 'Users & Teams' },
   ],
   Integrations: [
     {
-      href: "/integrations-settings/21250524/installed",
-      text: "Connected Apps",
+      href: '/integrations-settings/21250524/installed',
+      text: 'Connected Apps',
     },
-    { href: "/private-apps/21250524", text: "Private Apps" },
+    { href: '/private-apps/21250524', text: 'Private Apps' },
     {
-      href: "/integrations-settings/21250524/marketable-contacts-settings",
-      text: "Marketing Contacts",
+      href: '/integrations-settings/21250524/marketable-contacts-settings',
+      text: 'Marketing Contacts',
     },
-    { href: "/integrations-settings/21250524/ecommerce", text: "Ecommerce" },
-    { href: "/api-key/21250524", text: "API Key" },
+    { href: '/integrations-settings/21250524/ecommerce', text: 'Ecommerce' },
+    { href: '/api-key/21250524', text: 'API Key' },
     {
-      href: "/settings/21250524/marketing/email-service-provider",
-      text: "Email Service Provider",
+      href: '/settings/21250524/marketing/email-service-provider',
+      text: 'Email Service Provider',
     },
     {
-      href: "/marketplace-settings/21250524/downloads",
-      text: "Marketplace Downloads",
+      href: '/marketplace-settings/21250524/downloads',
+      text: 'Marketplace Downloads',
     },
   ],
-  "Tracking & Analytics": [
-    { href: "/settings/21250524/data-privacy", text: "Privacy & Consent" },
-    { href: "/sandboxes/21250524", text: "Sandboxes" },
-    { href: "/settings/21250524/business-units", text: "Business Units" },
+  'Tracking & Analytics': [
+    { href: '/settings/21250524/data-privacy', text: 'Privacy & Consent' },
+    { href: '/sandboxes/21250524', text: 'Sandboxes' },
+    { href: '/settings/21250524/business-units', text: 'Business Units' },
   ],
-  "Data Management": [
-    { href: "/property-settings/21250524", text: "Properties" },
+  'Data Management': [
+    { href: '/property-settings/21250524', text: 'Properties' },
     {
-      href: "/sales-products-settings/21250524/importexport",
-      text: "Import & Export",
+      href: '/sales-products-settings/21250524/importexport',
+      text: 'Import & Export',
     },
-    { href: "/settings/21250524/audits", text: "Audit LogsBETA" },
+    { href: '/settings/21250524/audits', text: 'Audit LogsBETA' },
   ],
   Tools: [
-    { href: "/settings/21250524/calling", text: "Calling" },
-    { href: "/settings/21250524/sales/payments", text: "Payments" },
+    { href: '/settings/21250524/calling', text: 'Calling' },
+    { href: '/settings/21250524/sales/payments', text: 'Payments' },
   ],
 } as const;
 
 function getNavStructure() {
   const links = $$<HTMLLinkElement | HTMLAnchorElement>(
-    "#navbar li:not(.expandable) [role=menuitem], #accounts-and-billing a, .navAccountMenu-bottom a"
+    '#navbar li:not(.expandable) [role=menuitem], #accounts-and-billing a, .navAccountMenu-bottom a'
   );
 
   const otherLinks = [
-    $<HTMLLinkElement>("#navSetting"),
-    $<HTMLLinkElement>("#navNotifications"),
-    $<HTMLLinkElement>("#userPreferences"),
+    $<HTMLLinkElement>('#navSetting'),
+    $<HTMLLinkElement>('#navNotifications'),
+    $<HTMLLinkElement>('#userPreferences'),
     ,
   ];
   const navStructure: Record<string, { href: string; text: string }> = {};
@@ -110,14 +89,14 @@ function getNavStructure() {
     Boolean
   ) as HTMLLinkElement[];
   for (const link of combinedLinks) {
-    let href = link.getAttribute("href");
-    let text = link.innerText?.trim().replace("\n", "");
+    let href = link.getAttribute('href');
+    let text = link.innerText?.trim().replace('\n', '');
     if (!href || !text) {
       continue;
     }
 
-    if (href.includes("user-preferences")) {
-      text = "Profile & Preferences";
+    if (href.includes('user-preferences')) {
+      text = 'Profile & Preferences';
     }
     navStructure[href] = { href, text };
   }
@@ -129,7 +108,7 @@ function getNavStructure() {
         href: `${href}`,
         text: `${text}`,
       };
-      if (href.split("")[0] === "/") {
+      if (href.split('')[0] === '/') {
         entry.href = `${window.location.origin}${href}`;
       }
       navStructure[href] = entry;
@@ -139,11 +118,11 @@ function getNavStructure() {
 }
 
 type AppMessage = {
-  type: "get_dom_content" | "open" | "did_open";
+  type: 'get_dom_content' | 'open' | 'did_open';
 };
 
 type AppMessageResponse = {
-  type: "got_dom_content";
+  type: 'got_dom_content';
   payload: { text: string | null; href: string | null }[];
 };
 
@@ -155,7 +134,7 @@ const messagesFromReactAppListener = async (
 ) => {
   chrome.scripting.executeScript({
     target: { tabId: sender?.tab?.id as number },
-    files: ["js/vendor.js", "js/content_script.js", "js/popup.js"],
+    files: ['js/vendor.js', 'js/content_script.js', 'js/popup.js'],
   });
   // console.log("[content_script.js]. Message received", msg);
   // if (msg.type === "get_dom_content") {
@@ -183,7 +162,7 @@ chrome.runtime.onMessage.addListener(messagesFromReactAppListener);
 chrome.webNavigation &&
   chrome.webNavigation.onCompleted.addListener(
     () => {
-      console.log("This is my favorite website!");
+      console.log('This is my favorite website!');
     },
-    { url: [{ urlMatches: ".*.hubspot.com.*" }] }
+    { url: [{ urlMatches: '.*.hubspot.com.*' }] }
   );

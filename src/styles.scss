@@ -1,5 +1,10 @@
 // @import "@assets/style/theme.scss";
 
+.hubspot-navigator-ext-root {
+  width: 0;
+  height: 0;
+}
+
 $radius: 5px;
 $height: 602px;
 $width: 400px;
@@ -50,10 +55,33 @@ $width: 400px;
     padding-left: 48px;
     border-top-right-radius: $radius;
     border-top-left-radius: $radius;
+    color: #33475b;
+    background: #f5f8fa;
+    border: 1px solid #cbd6e2;
+  }
+
+  .hubspot-navigator-ext-search-clear-icon {
+    display: block;
+    stroke: rgba(37, 51, 66, 0.5);
+    position: absolute;
+    right: 12px;
+    top: 14px;
+    stroke-width: 2px;
+    height: 32px;
+    width: 32px;
+    text-align: center;
+    cursor: pointer;
+    padding: 8px;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
   }
 
   input::placeholder {
-    color: rgba(0, 0, 0, 0.3);
+    color: #7c98b6;
   }
 
   ul {
@@ -68,7 +96,6 @@ $width: 400px;
   }
 
   .hubspot-navigator-extension-list-entry {
-    background-color: #1d3044;
     position: relative;
     display: flex;
     padding: 12px 12px 12px 4px;
@@ -134,6 +161,44 @@ $width: 400px;
       font-size: 16px;
       font-weight: 600;
       color: rgba(255, 255, 255, 0.5);
+    }
+  }
+
+  .hubspot-navigator-ext-action-selector {
+    display: flex;
+    width: 100%;
+    background: rgb(245, 248, 250);
+    // border-bottom: 4px solid rgba(0, 0, 0, 0.1);
+    // border-top: 1px solid rgba(0, 0, 0, 0.1);
+
+    .hubspot-navigator-ext-action {
+      display: flex;
+      position: relative;
+      align-items: center;
+      justify-content: center;
+      flex-grow: 1;
+      padding: 12px 16px;
+      color: rgb(51, 71, 91);
+      cursor: pointer;
+      font-weight: 400;
+      border-top: 1px solid rgba(124, 152, 182, 0.5);
+      border-left: 1px solid rgb(203, 214, 226);
+
+      &:first-child {
+        border-left: none;
+      }
+
+      &.active {
+        font-weight: 500;
+        color: rgb(51, 71, 91);
+      }
+      &.active,
+      &:hover {
+        background: white;
+      }
+      &:hover:not(.active) {
+        color: rgb(124, 152, 182);
+      }
     }
   }
 }

@@ -1,4 +1,5 @@
-export type Nullable<T> = T | null | undefined;
+export type None = null | undefined;
+export type Nullable<T> = T | None;
 
 export interface User {
   id: number;

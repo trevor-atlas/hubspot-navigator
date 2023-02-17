@@ -32,32 +32,25 @@ export const SearchInput = forwardRef<HTMLInputElement>((props, ref) => {
       <SearchIcon />
 
       {/* close button */}
-      <div
-        style={{
-          color: 'rgba(37, 51, 66, 0.5)',
-          position: 'absolute',
-          right: '14px',
-          top: '8px',
-          height: '24px',
-          width: '24px',
-          fontSize: '20px',
-          textAlign: 'center',
-          cursor: 'pointer',
-          padding: '8px',
-          '-webkit-touch-callout': 'none',
-          '-webkit-user-select': 'none',
-          '-khtml-user-select': 'none',
-          '-moz-user-select': 'none',
-          '-ms-user-select': 'none',
-          'user-select': 'none',
-        }}
+      <ClearButton
         onClick={() => {
           setQuery('');
           ref?.current?.focus();
         }}
-      >
-        ✕
-      </div>
+      />
     </div>
   );
 });
+
+function ClearButton({ onClick }: { onClick: () => void }) {
+  return (
+    <svg
+      onClick={onClick}
+      viewBox="0 0 14 14"
+      xmlns="http://www.w3.org/2000/svg"
+      className="hubspot-navigator-ext-search-clear-icon"
+    >
+      <path d="M14.5,1.5l-13,13m0-13,13,13" transform="translate(-1 -1)" />
+    </svg>
+  );
+}

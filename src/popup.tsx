@@ -5,63 +5,22 @@ import { SearchInput } from './components/SearchInput';
 import { NUMERIC } from './data/constants';
 import { useQueryStore } from './store';
 import { SearchResults } from './components/SearchResults';
+import { useKeyboardHandler } from './hooks/useKeyboardHandler';
 
-function useKeyboardShortcuts() {
-  const reset = useQueryStore((state) => state.reset);
-  const cursor = useQueryStore((state) => state.cursor);
-  const cursorUp = useQueryStore((state) => state.cursorUp);
-  const cursorDown = useQueryStore((state) => state.cursorDown);
-  const setCursor = useQueryStore((state) => state.setCursor);
-  const filtered = useQueryStore((state) => state.filteredEntries);
-  const hide = useQueryStore((state) => state.hide);
-  const toggleVisibility = useQueryStore((state) => state.toggleVisibility);
-  const openSelected = useQueryStore((state) => state.openSelected);
-
-  useEffect(() => {
-    function handleKeyDown({
-      key,
-      shiftKey,
-      ctrlKey,
-      metaKey,
-      altKey,
-    }: KeyboardEvent) {
-      if (cursor >= filtered.length) {
-        setCursor(0);
-      }
-
-      if (shiftKey && (metaKey || ctrlKey) && key.toLowerCase() === 'p') {
-        toggleVisibility();
-        reset();
-      }
-
-      switch (key) {
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        case '9':
-          return openSelected(key);
-        case 'Escape': {
-          hide();
-          return reset();
-        }
-        case 'Enter':
-          return openSelected();
-        case 'ArrowUp':
-          return cursorUp();
-        case 'ArrowDown':
-          return cursorDown();
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [cursor, filtered]);
+function ActionSelector() {
+  return (
+    <div className="hubspot-navigator-ext-action-selector">
+      <div className="hubspot-navigator-ext-action active">
+        <span>Search</span>
+      </div>
+      <div className="hubspot-navigator-ext-action">
+        <span>Portals</span>
+      </div>
+      <div className="hubspot-navigator-ext-action">
+        <span>Actions</span>
+      </div>
+    </div>
+  );
 }
 
 const Popup = () => {
@@ -71,7 +30,7 @@ const Popup = () => {
   const visible = useQueryStore((state) => state.visible);
   const hide = useQueryStore((state) => state.hide);
 
-  useKeyboardShortcuts();
+  useKeyboardHandler();
 
   useEffect(() => {
     if (visible) {
@@ -80,7 +39,11 @@ const Popup = () => {
   }, [visible]);
 
   useEffect(updateEntries, []);
-  useEffect(updateEntries, [visible]);
+  useEffect(() => {
+    if (visible) {
+      updateEntries();
+    }
+  }, [visible]);
 
   const handleOverlayClick = useCallback(() => {
     hide();
@@ -96,6 +59,7 @@ const Popup = () => {
       <div className="hubspot-navigator-ext-container" aria-hidden={visible}>
         <div className="hubspot-navigator-ext-wrapper">
           <SearchInput ref={inputRef} />
+          <ActionSelector />
           <div className="hubspot-navigator-ext-content">
             <SearchResults />
           </div>
