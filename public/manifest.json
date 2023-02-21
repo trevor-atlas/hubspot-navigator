@@ -3,9 +3,6 @@
   "name": "hubspot-navigator",
   "version": "1.0.0",
   "description": "Easily navigate the HubSpot UI",
-  "background": {
-    "service_worker": "src/background.js"
-  },
   "action": {
     "default_icon": "icon.png"
   },
@@ -20,11 +17,26 @@
     "https://app.hubspotqa.com/*",
     "https://local.hubspotqa.com/*"
   ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://app.hubspot.com/*",
+        "*://app.hubspotqa.com/*",
+        "*://local.hubspotqa.com/*"
+      ],
+      "js": [
+        "src/popup.js"
+      ],
+      "css": [
+        "assets/styles.chunk.css"
+      ],
+      "run_at": "document_start"
+    }
+  ],
   "web_accessible_resources": [
     {
       "resources": [
         "src/*.js",
-        "src/*.css",
         "icon-128.png",
         "icon-34.png"
       ],

@@ -1,17 +1,16 @@
 import { NUMERIC } from '@src/data/constants';
 import { useQueryStore } from '@src/store';
+import { isNumericString } from '@src/utils';
 import { ChangeEvent, forwardRef, useCallback } from 'react';
 import { SearchIcon } from './SearchIcon';
 
 export const SearchInput = forwardRef<HTMLInputElement>((props, ref) => {
   const query = useQueryStore((state) => state.query);
   const setQuery = useQueryStore((state) => state.setQuery);
-  const hide = useQueryStore((state) => state.hide);
-  const reset = useQueryStore((state) => state.reset);
 
   const updateQuery = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
-      if (!NUMERIC.test(e.target.value)) {
+      if (!isNumericString(e.target.value)) {
         setQuery(e.target.value);
       }
     },
@@ -31,7 +30,6 @@ export const SearchInput = forwardRef<HTMLInputElement>((props, ref) => {
       />
       <SearchIcon />
 
-      {/* close button */}
       <ClearButton
         onClick={() => {
           setQuery('');

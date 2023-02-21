@@ -1,65 +1,6 @@
 import { getAccountMenuInfo } from './accountMenuInfoParser';
 import { settings } from './data/settings';
-import { Nullable } from './types';
-import {
-  $,
-  $$,
-  click,
-  isSome,
-  once,
-  sleep,
-  waitForElement,
-  waitForElements,
-} from './utils';
-
-export interface User {
-  id: number;
-  firstName: string;
-  lastName: string;
-  displayName: string;
-  email: string;
-  avatarUri: string;
-  scopes: string[];
-  attributes: Record<string, any>;
-  displayLanguage: string;
-}
-
-export interface Portal {
-  portalId: number;
-  hubAccountNameOrDomain: string;
-  gates: string[];
-}
-
-export interface NavItem {
-  children?: NavItem[];
-  id: string;
-  label?: string;
-  path?: string;
-}
-
-type URLs = Map<
-  string,
-  {
-    parentId: string;
-    currentId: string;
-  }
->;
-
-export type NavConfig = {
-  children: NavItem[];
-  isAccurate: boolean;
-  portal: Portal;
-  translations: Record<string, string>;
-  user: User;
-  newButton: {
-    id: string;
-    label: string;
-    path?: string;
-  }[];
-  experimentStatuses?: {
-    experiments?: Record<string, unknown>;
-  };
-} & {};
+import { ListNavEntry, NavConfig, NavItem } from './types';
 
 function getActions() {
   const actions = [
@@ -70,6 +11,14 @@ function getActions() {
     {
       href: 'https://app.hubspot.com/contacts/%PORTALID%/companies/list/view/all?createNewObject=COMPANY',
       text: 'Create Company',
+    },
+    {
+      href: 'https://app.hubspot.com/contacts/21250524/objects/0-3/views/all/list?createNewObject=DEAL',
+      text: 'Create Deal',
+    },
+    {
+      href: 'https://app.hubspot.com/contacts/21250524/objects/0-5/views/all/list?createNewObject=TICKET',
+      text: 'Create Ticket',
     },
   ];
 }
@@ -103,13 +52,6 @@ const flattenTree = (
   }
 };
 
-export type ListNavEntry = {
-  id: string;
-  href: string;
-  label: string;
-  description: string | null;
-};
-
 export async function collateNavConfig(config: NavConfig) {
   const parsedNav: Record<string, ListNavEntry> = {}; //Array<ListNavEntry> = [];
 
@@ -139,18 +81,3 @@ export async function collateNavConfig(config: NavConfig) {
   }
   return Object.values(parsedNav);
 }
-
-export const getActiveNavigationItems = ({
-  path,
-  urls,
-}: {
-  path: string;
-  urls: URLs;
-}) => {
-  const current = path.split('/');
-  while (current.length && !urls.has(current.join('/'))) {
-    current.pop();
-  }
-
-  return current.length > 0 ? urls.get(current.join('/')) : {};
-};

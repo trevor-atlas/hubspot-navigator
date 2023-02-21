@@ -57,12 +57,10 @@ const Popup = () => {
   return (
     <>
       <div className="hubspot-navigator-ext-container" aria-hidden={visible}>
-        <div className="hubspot-navigator-ext-wrapper">
-          <SearchInput ref={inputRef} />
-          <ActionSelector />
-          <div className="hubspot-navigator-ext-content">
-            <SearchResults />
-          </div>
+        <SearchInput ref={inputRef} />
+        <ActionSelector />
+        <div className="hubspot-navigator-ext-content">
+          <SearchResults />
         </div>
       </div>
       <GlobalOverlay handleClick={handleOverlayClick} />
@@ -75,6 +73,9 @@ function start() {
   if (document.getElementById(ROOT_ID)) {
     return;
   }
+  chrome.storage.local.set({ key: 12 }).then(() => {
+    console.log('Value is set to ' + 12);
+  });
   const host = document.createElement('div');
   host.id = ROOT_ID;
   document.body.appendChild(host);

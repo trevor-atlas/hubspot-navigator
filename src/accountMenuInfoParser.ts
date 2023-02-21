@@ -12,47 +12,33 @@ import {
   isNone,
   isSome,
 } from './utils';
+import { Storage } from '@trevoratlas/utilities/src/index';
 
 const KEY = `${NS}:account-menu-info`;
+
+const cache = Storage.createCache<AccountMenuInfo>(
+  KEY,
+  setLocalStorageValue,
+  getLocalStorageValue,
+  (entry) => {
+    if (isNone(entry)) return true;
+    const { lastUpdated } = entry;
+    const diff = Date.now() - lastUpdated;
+    return diff > 1000 * 60 * 60 * 24;
+  }
+);
 
 type PortalNavEntry = ListNavEntry & { portalId: number };
 
 interface AccountMenuInfo {
   portals: PortalNavEntry[];
   accountExtras: ListNavEntry[];
-  lastUpdated: number;
 }
 
 const getFilteredPortals = (portals: PortalNavEntry[]) => {
   const portalId = getPortalId();
   return portals.filter((portal) => portal.portalId !== portalId);
 };
-
-export const getAccountInfo = () => {
-  const accountInfo = getLocalStorageValue<AccountMenuInfo>(KEY);
-  if (isNone(accountInfo)) {
-    return null;
-  }
-  return {
-    ...accountInfo,
-    portals: getFilteredPortals(accountInfo.portals),
-  };
-};
-
-function writeAccountInfo(data: Omit<AccountMenuInfo, 'lastUpdated'>) {
-  const accountMenuInfo: AccountMenuInfo = {
-    ...data,
-    lastUpdated: Date.now(),
-  };
-  setLocalStorageValue(KEY, accountMenuInfo);
-}
-
-function isAccountInfoStale(accountInfo: AccountMenuInfo) {
-  if (isNone(accountInfo)) return true;
-  const { lastUpdated } = accountInfo;
-  const diff = Date.now() - lastUpdated;
-  return diff > 1000 * 60 * 60 * 24;
-}
 
 // Some contents of the menu don't render before the menu has been opened
 const populateAccountMenu = once(async () => {
@@ -159,16 +145,25 @@ async function scrapeAccountMenuPortals() {
 }
 
 export async function getAccountMenuInfo() {
-  const cachedAccountInfo = getAccountInfo();
-  if (isSome(cachedAccountInfo) && !isAccountInfoStale(cachedAccountInfo)) {
-    return cachedAccountInfo;
+  if (cache.isPrimed()) {
+    const {
+      value: { portals, accountExtras },
+    } = cache.get()!;
+    return {
+      portals: getFilteredPortals(portals),
+      accountExtras,
+    };
   }
 
   const portals = await scrapeAccountMenuPortals();
   const accountExtras = await scrapeAccountMenuNavigation();
-  writeAccountInfo({
+  cache.set({
     portals,
     accountExtras,
   });
-  return getAccountInfo()!;
+
+  return {
+    portals: getFilteredPortals(portals),
+    accountExtras,
+  };
 }

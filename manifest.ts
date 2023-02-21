@@ -8,8 +8,6 @@ const manifest: chrome.runtime.ManifestV3 = {
   name: packageJson.name,
   version: packageJson.version,
   description: packageJson.description,
-  // options_page: "src/pages/options/index.html",
-  background: { service_worker: 'src/background.js' },
   action: {
     default_icon: 'icon.png',
   },
@@ -19,9 +17,20 @@ const manifest: chrome.runtime.ManifestV3 = {
     'https://app.hubspotqa.com/*',
     'https://local.hubspotqa.com/*',
   ],
+  content_scripts: [
+    {
+      matches: [
+        '*://app.hubspot.com/*',
+        '*://app.hubspotqa.com/*',
+        '*://local.hubspotqa.com/*',
+      ],
+      js: ['src/app.js'],
+      css: ['assets/styles.chunk.css'],
+    },
+  ],
   web_accessible_resources: [
     {
-      resources: ['src/*.js', 'src/*.css', 'icon-128.png', 'icon-34.png'],
+      resources: ['src/*.js', 'icon-128.png', 'icon-34.png'],
       matches: ['*://*/*'],
     },
   ],

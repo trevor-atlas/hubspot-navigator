@@ -13,13 +13,8 @@ export function useKeyboardHandler() {
   const openSelected = useQueryStore((state) => state.openSelected);
 
   useEffect(() => {
-    function handleKeyDown({
-      key,
-      shiftKey,
-      ctrlKey,
-      metaKey,
-      altKey,
-    }: KeyboardEvent) {
+    function handleKeyDown(event: KeyboardEvent) {
+      const { key, shiftKey, ctrlKey, metaKey, altKey } = event;
       if (cursor >= filtered.length) {
         setCursor(0);
       }
@@ -47,8 +42,12 @@ export function useKeyboardHandler() {
         case 'Enter':
           return openSelected();
         case 'ArrowUp':
+          event.preventDefault();
+          event.stopPropagation();
           return cursorUp();
         case 'ArrowDown':
+          event.preventDefault();
+          event.stopPropagation();
           return cursorDown();
       }
     }
