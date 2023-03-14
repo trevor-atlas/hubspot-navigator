@@ -3,6 +3,8 @@ import { useQueryStore } from '@src/store';
 import { Ref, RefObject, useEffect, useRef } from 'react';
 import { ListNavEntry } from '../navigationParser';
 
+const favorited = `${NS}-favorited`;
+
 export function ListEntry({
   parent,
   active,
@@ -12,7 +14,7 @@ export function ListEntry({
   onSelect,
 }: {
   parent: RefObject<HTMLUListElement>;
-  item?: ListNavEntry;
+  item: ListNavEntry;
   active: boolean;
   index: number;
   onSelect: () => void;
@@ -20,7 +22,7 @@ export function ListEntry({
 }) {
   const self = useRef<HTMLLIElement>(null);
   const setFavorite = useQueryStore((state) => state.setFavorite);
-  const isFavorite = useQueryStore((state) => state.isFavorite);
+  const isFavorite = useQueryStore((state) => state.isFavorite(item.href));
 
   useEffect(() => {
     if (active) {
@@ -31,20 +33,6 @@ export function ListEntry({
     }
   }, [active]);
 
-  if (!item)
-    return (
-      <li
-        tabIndex={1}
-        onFocus={onSelect}
-        className={`${NS}-list-entry active`}
-        title="No results found"
-      >
-        <div className={`${NS}-label--wrapper`}>
-          <span className={`${NS}-label`}>No results found</span>
-          <span className={`${NS}-description`}>Try a different query</span>
-        </div>
-      </li>
-    );
   return (
     <li
       ref={self}
@@ -54,13 +42,13 @@ export function ListEntry({
       title={`${item.label}`}
     >
       <div
-        className={`${NS}-favorite`}
+        className={`${NS}-favorite ${isFavorite ? favorited : ''}`}
         onClick={(e) => {
           e.stopPropagation();
           setFavorite(item.href);
         }}
       >
-        {isFavorite(item.href) ? '★' : '☆'}
+        {isFavorite ? '★' : '☆'}
       </div>
       <div onClick={onClick} className={`${NS}-label--wrapper`}>
         <span className={`${NS}-label`}>{item.label}</span>

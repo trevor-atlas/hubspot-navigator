@@ -152,11 +152,16 @@ $width: 400px;
       justify-content: center;
       font-size: 18px;
       padding: 8px;
+      color: rgba(#ff7a59, 0.5);
       cursor: pointer;
-      color: #ff7a59;
       font-weight: 600;
 
+      &.hubspot-navigator-extension-favorited {
+        color: #ff7a59;
+      }
+
       &:hover {
+        color: #ff7a59;
         background-color: rgba(255, 255, 255, 0.1);
       }
     }
@@ -218,12 +223,13 @@ $width: 400px;
   display: inline-block;
 
   li {
-    font-size: 20px;
+    font-size: 14px;
     padding: 4px 16px;
     line-height: 1.5;
-    color: #aaa;
+    color: #d3d3d3;
     span {
-      color: #abb3cd;
+      color: #dae0f1;
+      font-style: italic;
     }
     &:hover {
       background: rgba(255, 255, 255, 0.1);

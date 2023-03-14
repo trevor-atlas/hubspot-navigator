@@ -1,18 +1,18 @@
 import { create } from 'zustand';
 import { NS, NUMERIC } from './data/constants';
-import { ListNavEntry } from './navigationParser';
+import { maybeUpdateEntries } from './navigationParser';
 import {
   setLocalStorageValue,
   getNavStructure,
   getLocalStorageValue,
 } from './utils';
 import Fuse from 'fuse.js';
-import { Nullable } from './types';
+import { ListNavEntry, Nullable } from './types';
 
 const options: Fuse.IFuseOptions<ListNavEntry> = {
   includeScore: true,
   ignoreLocation: true,
-  threshold: 0.5,
+  threshold: 0.3,
 
   keys: [
     {
@@ -90,6 +90,7 @@ export const useQueryStore = create<QueryStore>((set, get) => {
       set({ visible: false });
     },
     toggleVisibility: () => {
+      maybeUpdateEntries();
       set({ visible: !get().visible, entryMetadata: getEntryMetadata() });
     },
     reset: () => {
@@ -115,8 +116,9 @@ export const useQueryStore = create<QueryStore>((set, get) => {
     updateQueryEntries: async () => {
       const structure = await getNavStructure();
       const mostFrequent = getEntryMetadata();
-      set({
-        queryEntries: structure.sort((a: ListNavEntry, b: ListNavEntry) => {
+      const { query } = get();
+      const queryEntries = structure.sort(
+        (a: ListNavEntry, b: ListNavEntry) => {
           const aEntry = mostFrequent[a.href] || { uses: 0, favorite: false };
           const bEntry = mostFrequent[b.href] || { uses: 0, favorite: false };
           if (aEntry.favorite) {
@@ -127,10 +129,17 @@ export const useQueryStore = create<QueryStore>((set, get) => {
           const aFreq = aEntry.uses;
           const bFreq = bEntry.uses;
           return bFreq - aFreq;
-        }),
+        }
+      );
+      const update = {
+        queryEntries,
         entryMetadata: getEntryMetadata(),
         fuse: new Fuse(structure, options),
-      });
+      } as Partial<QueryStore>;
+      if (!query) {
+        update.filteredEntries = queryEntries;
+      }
+      set(update);
     },
     setQuery: (query: string) => {
       const { fuse, queryEntries } = get();

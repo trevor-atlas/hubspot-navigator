@@ -6,12 +6,7 @@
   "action": {
     "default_icon": "icon.png"
   },
-  "permissions": [
-    "storage",
-    "activeTab",
-    "scripting",
-    "tabs"
-  ],
+  "permissions": ["storage", "activeTab", "scripting", "tabs"],
   "host_permissions": [
     "https://app.hubspot.com/*",
     "https://app.hubspotqa.com/*",
@@ -24,25 +19,14 @@
         "*://app.hubspotqa.com/*",
         "*://local.hubspotqa.com/*"
       ],
-      "js": [
-        "src/popup.js"
-      ],
-      "css": [
-        "assets/styles.chunk.css"
-      ],
-      "run_at": "document_start"
+      "js": ["app.js"],
+      "css": ["styles.css"]
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": [
-        "src/*.js",
-        "icon-128.png",
-        "icon-34.png"
-      ],
-      "matches": [
-        "*://*/*"
-      ]
+      "resources": ["src/*.js", "icon-128.png", "icon-34.png"],
+      "matches": ["*://*/*"]
     }
   ]
 }

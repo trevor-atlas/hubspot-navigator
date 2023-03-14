@@ -1,48 +1,59 @@
-import { NS, NUMERIC } from './data/constants';
-import { ListNavEntry } from './navigationParser';
 import {
-  waitForElement,
   click,
-  waitForElements,
   once,
-  setLocalStorageValue,
-  getLocalStorageValue,
   getPortalId,
   isNumericString,
   isNone,
   isSome,
+  isValidListNavEntry,
 } from './utils';
-import { Storage } from '@trevoratlas/utilities/src/index';
+import {
+  isNumber,
+  createCache,
+  waitForElement,
+  waitForElements,
+} from '@trevoratlas/utilities/src/index';
+import { NS } from './data/constants';
+import { createNavEntry, ListNavEntry, Nullable } from './types';
 
 const KEY = `${NS}:account-menu-info`;
 
-const cache = Storage.createCache<AccountMenuInfo>(
-  KEY,
-  setLocalStorageValue,
-  getLocalStorageValue,
-  (entry) => {
+const cache = createCache<AccountMenuInfo>({
+  writer: async (value) => {
+    const portalId = getPortalId();
+    const key = `${portalId}-${KEY}`;
+    const parsed = JSON.stringify(value);
+    await chrome.storage.local.set({ [key]: parsed });
+  },
+  reader: async () => {
+    const portalId = getPortalId();
+    const key = `${portalId}-${KEY}`;
+    const value = (await chrome.storage.local.get(key)) as any;
+    if (!value || !(key in value)) return null;
+    return JSON.parse(value[key]);
+  },
+  validator: async (entry) => {
     if (isNone(entry)) return true;
     const { lastUpdated } = entry;
+    if (!isNumber(lastUpdated)) return true;
     const diff = Date.now() - lastUpdated;
     return diff > 1000 * 60 * 60 * 24;
-  }
-);
-
-type PortalNavEntry = ListNavEntry & { portalId: number };
+  },
+});
 
 interface AccountMenuInfo {
-  portals: PortalNavEntry[];
+  portals: ListNavEntry[];
   accountExtras: ListNavEntry[];
 }
 
-const getFilteredPortals = (portals: PortalNavEntry[]) => {
+const getFilteredPortals = (portals: ListNavEntry[]) => {
   const portalId = getPortalId();
-  return portals.filter((portal) => portal.portalId !== portalId);
+  return portals.filter((entry) => entry.metadata.portalId !== portalId);
 };
 
 // Some contents of the menu don't render before the menu has been opened
 const populateAccountMenu = once(async () => {
-  await waitForElement<HTMLButtonElement>('#account-menu', 25)
+  await waitForElement<HTMLButtonElement>('#account-menu')
     .then(click)
     .then((el) => {
       setTimeout(() => {
@@ -53,49 +64,52 @@ const populateAccountMenu = once(async () => {
 
 async function scrapeAccountMenuNavigation() {
   const accountExtras = await waitForElements<HTMLAnchorElement[]>(
-    '.account-extras a',
-    25
+    '.account-extras a'
   ).then((links) =>
-    links.map((el) => {
+    links
+      .map((el) => {
+        const href = el.getAttribute('href');
+        const label = el.textContent?.trim();
+        if (!href || !label) return;
+        return createNavEntry({
+          id: `account-menu-${href}`,
+          href,
+          label,
+          type: 'account',
+          description: `Account Extras/${label}`,
+          metadata: {},
+        });
+      })
+      .filter(isSome)
+  );
+  const profile: Nullable<ListNavEntry> =
+    await waitForElement<HTMLAnchorElement>('.userpreferences a').then((el) => {
       const href = el.getAttribute('href');
-      const label = el.textContent?.trim();
+      const label = el
+        .querySelector('.user-info-preferences')
+        ?.textContent?.trim();
       if (!href || !label) return;
-      return {
+      return createNavEntry({
         id: `account-menu-${href}`,
         href,
         label,
+        type: 'account',
         description: `Account Extras/${label}`,
-      };
-    })
-  );
-  const profile = await waitForElement<HTMLAnchorElement>(
-    '.userpreferences a',
-    25
-  ).then((el) => {
-    const href = el.getAttribute('href');
-    const label = el
-      .querySelector('.user-info-preferences')
-      ?.textContent?.trim();
-    if (!href || !label) return;
-    return {
-      id: `account-menu-${href}`,
-      href,
-      label,
-      description: `Account Extras/${label}`,
-    };
-  });
+        metadata: {},
+      });
+    });
+  if (isSome(profile)) {
+    accountExtras.push(profile);
+  }
 
-  accountExtras.push(profile);
-
-  return accountExtras.filter(Boolean) as ListNavEntry[];
+  return accountExtras.filter(isSome);
 }
 
 async function scrapeAccountMenuPortals() {
   await populateAccountMenu();
 
   const portals = await waitForElements<HTMLAnchorElement[]>(
-    '.navtools .navAccountSwitcher .navAccount a',
-    25
+    '.navtools .navAccountSwitcher .navAccount a'
   ).then(
     (portals) =>
       portals
@@ -109,21 +123,29 @@ async function scrapeAccountMenuPortals() {
             .querySelector('.navAccount-portalId')
             ?.textContent?.trim();
 
-          if (!portalName || !isNumericString(portalId)) return;
-          return {
+          if (
+            isNone(href) ||
+            isNone(portalName) ||
+            !isNumericString(portalId)
+          ) {
+            return null;
+          }
+          return createNavEntry({
             id: `portal-switcher-${href}`,
             href,
             label: portalName,
-            description: `Switch to the "${portalName}" portal`,
-            portalId: Number(portalId),
-          };
+            type: 'portal',
+            description: `Switch to portal "${portalName}" (${portalId})`,
+            metadata: {
+              portalId: isNumber(portalId) ? portalId : Number(portalId),
+            },
+          });
         })
-        .filter(Boolean) as PortalNavEntry[]
+        .filter(Boolean) as ListNavEntry[]
   );
 
-  const currentPortal = (await waitForElement<HTMLAnchorElement>(
-    '.navtools .navAccount-current',
-    25
+  const currentPortal = await waitForElement<HTMLAnchorElement>(
+    '.navtools .navAccount-current'
   ).then((el) => {
     const portalId = getPortalId();
     const href = `/home-beta?portalId=${portalId}`;
@@ -131,24 +153,35 @@ async function scrapeAccountMenuPortals() {
       .querySelector('.navAccount-accountName')
       ?.textContent?.replace(':', '')
       ?.trim() as string;
-    return {
+    return createNavEntry({
       id: `portal-switcher-${href}`,
-      href: href,
+      href,
       label: portalName,
-      description: `Switch to the "${portalName}" portal`,
-      portalId: portalId,
-    };
-  })) as PortalNavEntry;
+      type: 'portal',
+      description: `Switch to portal "${portalName}" (${portalId})`,
+      metadata: {
+        portalId: isNumber(portalId) ? portalId : Number(portalId),
+      },
+    });
+  });
 
-  portals.push(currentPortal);
-  return portals;
+  if (isSome(currentPortal)) {
+    portals.push(currentPortal);
+  }
+
+  return portals.filter(isSome).filter(isValidListNavEntry);
 }
 
-export async function getAccountMenuInfo() {
-  if (cache.isPrimed()) {
+export async function getAccountMenuInfo(): Promise<{
+  portals: ListNavEntry[];
+  accountExtras: ListNavEntry[];
+}> {
+  const isReady = await cache.isPrimed();
+  if (isReady) {
+    const result = await cache.get()!;
     const {
       value: { portals, accountExtras },
-    } = cache.get()!;
+    } = result as any;
     return {
       portals: getFilteredPortals(portals),
       accountExtras,
@@ -157,7 +190,7 @@ export async function getAccountMenuInfo() {
 
   const portals = await scrapeAccountMenuPortals();
   const accountExtras = await scrapeAccountMenuNavigation();
-  cache.set({
+  await cache.set({
     portals,
     accountExtras,
   });

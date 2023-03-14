@@ -1,3 +1,7 @@
+import { Primitive } from '@trevoratlas/utilities/src/types/common';
+import { z } from 'zod';
+import { parsePortalIDs, sanitizePortalId, stripDomain } from './utils';
+
 export type None = null | undefined;
 export type Nullable<T> = T | None;
 
@@ -77,9 +81,43 @@ export type NavConfig = {
   };
 };
 
+export type NavEntryType = 'portal' | 'account' | 'settings' | 'nav' | 'action';
+
 export type ListNavEntry = {
   id: string;
   href: string;
   label: string;
   description: string | null;
+  type: NavEntryType;
+  metadata: NavEntryType extends 'portal'
+    ? { portalId: number }
+    : Record<string, Primitive>;
 };
+
+export const ListNavEntrySchema = z.object({
+  id: z.string(),
+  href: z.string(),
+  label: z.string(),
+  description: z.string().nullable(),
+  type: z.enum(['portal', 'account', 'settings', 'nav', 'action']),
+  metadata: z.record(z.any()),
+});
+
+export function createNavEntry({
+  id,
+  href,
+  label,
+  description,
+  type,
+  metadata,
+}: ListNavEntry): Nullable<ListNavEntry> {
+  const entry = {
+    id,
+    href: stripDomain(sanitizePortalId(href)),
+    label,
+    description,
+    type,
+    metadata,
+  };
+  return ListNavEntrySchema.safeParse(entry).success ? entry : null;
+}

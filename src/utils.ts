@@ -1,19 +1,6 @@
-import { NS, NUMERIC } from './data/constants';
-import { collateNavConfig, NavConfig } from './navigationParser';
-import { Nullable } from './types';
-
-function getActions() {
-  const actions = [
-    {
-      href: 'https://app.hubspot.com/contacts/21250524/contacts/list/view/all?createNewObject=CONTACT',
-      text: 'Create Contact',
-    },
-    {
-      href: 'https://app.hubspot.com/contacts/21250524/companies/list/view/all?createNewObject=COMPANY',
-      text: 'Create Company',
-    },
-  ];
-}
+import { NUMERIC } from './data/constants';
+import { collateNavConfig, maybeUpdateEntries } from './navigationParser';
+import { ListNavEntry, ListNavEntrySchema, NavConfig, Nullable } from './types';
 
 export function setLocalStorageValue<T>(key: string, value: T) {
   const marshaled = typeof value === 'string' ? value : JSON.stringify(value);
@@ -48,13 +35,16 @@ export function $$<ElementType extends Element>(selector: string) {
 }
 
 export function getPortalId(): number {
-  const config = getLocalStorageValue<{ [key: string]: string }>(
-    'hubspot_navconfigs'
-  );
-  if (!config) {
+  try {
     return Number(window.location.href.split('/').find(isNumericString));
+  } catch (e) {
+    const config =
+      getLocalStorageValue<Record<string, string>>('hubspot_navconfigs');
+    if (isNone(config) || !Object.keys(config).length) {
+      throw new Error("can't find a valid portal id");
+    }
+    return Object.keys(config).filter(isNumericString).map(Number)[0];
   }
-  return Object.keys(config).map(Number).find(isNumeric) || 0;
 }
 
 export async function getNavStructure() {
@@ -62,7 +52,9 @@ export async function getNavStructure() {
   const navconfig = getLocalStorageValue<{ [key: string]: NavConfig }>(
     'hubspot_navconfigs'
   );
-  if (!navconfig || !portalId) {
+
+  maybeUpdateEntries();
+  if (isNone(navconfig) || isNone(portalId)) {
     return [];
   }
 
@@ -87,7 +79,13 @@ export const isNumericString = (
 ): value is `${number}` => isSome(value) && NUMERIC.test(value);
 
 export const isNumeric = (value: Nullable<number>): value is number =>
-  isSome(value) && typeof value === 'number';
+  isSome(value) && typeof value === 'number' && !isNaN(value);
+
+export function isValidListNavEntry(
+  entry: Nullable<ListNavEntry>
+): entry is ListNavEntry {
+  return ListNavEntrySchema.safeParse(entry).success;
+}
 
 export async function waitForElements<ElementType extends HTMLElement[]>(
   selector: string,
@@ -138,4 +136,18 @@ export function once<T>(fn: (...args: any[]) => T) {
     }
     return result;
   };
+}
+
+export function stripDomain(href: string) {
+  return href.replace(/https?:\/\/[^/]+/gim, '');
+}
+
+export function sanitizePortalId(href: string) {
+  const portalId = getPortalId();
+  return href.replace(portalId.toString(), '%PORTALID%');
+}
+
+export function parsePortalIDs(href: string) {
+  const portalId = getPortalId();
+  return href.replace('%PORTALID%', portalId.toString());
 }

@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { createRoot } from 'react-dom/client';
+import { render } from 'react-dom';
 import { GlobalOverlay } from './components/GlobalOverlay';
 import { SearchInput } from './components/SearchInput';
-import { NUMERIC } from './data/constants';
 import { useQueryStore } from './store';
 import { SearchResults } from './components/SearchResults';
 import { useKeyboardHandler } from './hooks/useKeyboardHandler';
@@ -33,14 +32,11 @@ const Popup = () => {
   useKeyboardHandler();
 
   useEffect(() => {
+    updateEntries();
     if (visible) {
       inputRef.current?.focus();
     }
-  }, [visible]);
-
-  useEffect(updateEntries, []);
-  useEffect(() => {
-    if (visible) {
+    if (!visible) {
       updateEntries();
     }
   }, [visible]);
@@ -58,7 +54,7 @@ const Popup = () => {
     <>
       <div className="hubspot-navigator-ext-container" aria-hidden={visible}>
         <SearchInput ref={inputRef} />
-        <ActionSelector />
+        {/* <ActionSelector /> */}
         <div className="hubspot-navigator-ext-content">
           <SearchResults />
         </div>
@@ -69,19 +65,17 @@ const Popup = () => {
 };
 const ROOT_ID = 'hubspot-navigator-ext-root';
 
-function start() {
+async function start() {
   if (document.getElementById(ROOT_ID)) {
     return;
   }
-  chrome.storage.local.set({ key: 12 }).then(() => {
-    console.log('Value is set to ' + 12);
-  });
+
+  useQueryStore.getState().updateQueryEntries();
+
   const host = document.createElement('div');
   host.id = ROOT_ID;
   document.body.appendChild(host);
-  const root = createRoot(host);
-
-  root.render(<Popup />);
+  render(<Popup />, host);
 }
 
 start();

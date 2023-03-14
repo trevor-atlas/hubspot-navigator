@@ -1,10 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path, { resolve } from 'path';
-import makeManifest from './utils/plugins/make-manifest';
-import customDynamicImport from './utils/plugins/custom-dynamic-import';
-import addHmr from './utils/plugins/add-hmr';
-import manifest from './manifest';
 
 const root = resolve(__dirname, 'src');
 const pagesDir = resolve(root, 'pages');
@@ -26,12 +22,7 @@ export default defineConfig({
       '@pages': pagesDir,
     },
   },
-  plugins: [
-    react(),
-    makeManifest(manifest),
-    customDynamicImport(),
-    addHmr({ background: enableHmrInBackgroundScript, view: true }),
-  ],
+  plugins: [react()],
   publicDir,
   build: {
     outDir,
@@ -40,22 +31,21 @@ export default defineConfig({
     reportCompressedSize: isProduction,
     rollupOptions: {
       input: {
-        background: resolve(root, 'background.ts'),
         styles: resolve(root, 'styles.scss'),
-        popup: resolve(root, 'popup.tsx'),
+        app: resolve(root, 'app.tsx'),
       },
       watch: {
         include: ['src/**', 'vite.config.ts'],
         exclude: ['node_modules/**', 'src/**/*.spec.ts'],
       },
       output: {
-        entryFileNames: 'src/[name].js',
+        entryFileNames: '[name].js',
         chunkFileNames: isDev
           ? 'assets/js/[name].js'
           : 'assets/js/[name].[hash].js',
         assetFileNames: (assetInfo) => {
           const { name } = path.parse(assetInfo.name!);
-          return `assets/${name}.chunk.[ext]`;
+          return `${name}.[ext]`;
         },
       },
     },

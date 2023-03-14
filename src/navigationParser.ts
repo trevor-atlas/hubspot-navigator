@@ -1,33 +1,22 @@
 import { getAccountMenuInfo } from './accountMenuInfoParser';
-import { settings } from './data/settings';
-import { ListNavEntry, NavConfig, NavItem } from './types';
+import { getSettings } from './settingsParser';
+import { getActions } from './data/actions';
+import { suffixes } from './data/constants';
+import { createNavEntry, ListNavEntry, NavConfig, NavItem } from './types';
+import { getPortalId, isSome, parsePortalIDs, stripDomain } from './utils';
 
-function getActions() {
-  const actions = [
-    {
-      href: 'https://app.hubspot.com/contacts/%PORTALID%/contacts/list/view/all?createNewObject=CONTACT',
-      text: 'Create Contact',
-    },
-    {
-      href: 'https://app.hubspot.com/contacts/%PORTALID%/companies/list/view/all?createNewObject=COMPANY',
-      text: 'Create Company',
-    },
-    {
-      href: 'https://app.hubspot.com/contacts/21250524/objects/0-3/views/all/list?createNewObject=DEAL',
-      text: 'Create Deal',
-    },
-    {
-      href: 'https://app.hubspot.com/contacts/21250524/objects/0-5/views/all/list?createNewObject=TICKET',
-      text: 'Create Ticket',
-    },
-  ];
+export async function maybeUpdateEntries() {
+  if (window.location.pathname.includes('/settings')) {
+    // update settings nav entries
+    await getSettings();
+  }
 }
 
-const flattenTree = (
+function flattenTree(
   item: NavItem,
   parsedNav: Record<string, ListNavEntry>,
   path: string = ''
-): void => {
+): void {
   const isParent = !('path' in item) && item.children && item.label;
   let description = path;
   if (isParent) {
@@ -36,7 +25,7 @@ const flattenTree = (
   if (item.path && item.label) {
     const description = path ? `${path}/${item.label}` : `${item.label}`;
     const { children, ...rest } = item;
-    parsedNav[item.path as any] = {
+    const entry = createNavEntry({
       id: item.id,
       label:
         item.label ||
@@ -44,17 +33,26 @@ const flattenTree = (
         `NO LABEL FOR ${JSON.stringify(rest, null, 2)}`,
       href: item.path || '',
       description,
-    };
+      type: 'nav',
+      metadata: {},
+    });
+    if (isSome(entry)) {
+      parsedNav[entry.href] = entry;
+    }
   }
   if (!item.children) return;
   for (const child of item.children) {
     flattenTree(child, parsedNav, description);
   }
-};
+}
 
 export async function collateNavConfig(config: NavConfig) {
-  const parsedNav: Record<string, ListNavEntry> = {}; //Array<ListNavEntry> = [];
+  const parsedNav: Record<string, ListNavEntry> = {};
 
+  const settings = await getSettings();
+  settings.forEach((setting) => {
+    parsedNav[setting.href] = setting;
+  });
   const { portals, accountExtras } = await getAccountMenuInfo();
   portals.forEach((portal) => {
     parsedNav[portal.href] = portal;
@@ -63,21 +61,28 @@ export async function collateNavConfig(config: NavConfig) {
     parsedNav[entry.href] = entry;
   });
 
+  const actions = await getActions();
+  actions.forEach((action) => {
+    parsedNav[action.href] = action;
+  });
+
   for (const item of config.children) {
     flattenTree(item, parsedNav);
   }
-  for (const [category, entries] of Object.entries(settings)) {
-    for (const entry of entries) {
-      parsedNav[entry.href] = {
-        id: entry.href,
-        label: entry.label,
-        href: entry.href.replace(
-          '%PORTALID%',
-          config.portal.portalId.toString()
-        ),
-        description: `Settings/${category}`,
-      };
-    }
-  }
-  return Object.values(parsedNav);
+
+  const result = Object.values(parsedNav).map(formatEntry);
+  console.log(result.map((e) => e.href));
+
+  return result;
+}
+
+function formatEntry(entry: ListNavEntry) {
+  return {
+    id: entry.id,
+    href: stripDomain(parsePortalIDs(entry.href)),
+    label: `${suffixes[entry.type]} ${entry.label}`,
+    description: entry.description,
+    type: entry.type,
+    metadata: entry.metadata,
+  };
 }
